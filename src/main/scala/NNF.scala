@@ -1,18 +1,18 @@
 import java.{util => ju}
 
-sealed abstract class NNFedGFFormula[T, A[_], X] {
+sealed abstract class NNFedGFFormula[T, X] {
   val tag : T
 }
  
-case class NNFLiteral[T, A[_], X](tag : T, negation : Boolean, atom : A[X]) extends NNFedGFFormula[T, A, X]
-case class NNFNot[T, A[_], X](tag : T, sub : NNFedGFFormula[T, A, X]) extends NNFedGFFormula[T, A, X]
-case class NNFAnd[T, A[_], X](tag : T, left : NNFedGFFormula[T, A, X], right : NNFedGFFormula[T, A, X]) extends NNFedGFFormula[T, A, X]
-case class NNFOr[T, A[_], X](tag : T, left : NNFedGFFormula[T, A, X], right : NNFedGFFormula[T, A, X]) extends NNFedGFFormula[T, A, X]
-case class NNFForall[T, A[_], X](tag : T, variables : List[X], guard : A[X], sub : NNFedGFFormula[T, A, X]) extends NNFedGFFormula[T, A, X]
-case class NNFExist[T, A[_], X](tag : T, variable : List[X], guard : A[X], sub : NNFedGFFormula[T, A, X]) extends NNFedGFFormula[T, A, X]
+case class NNFLiteral[T, X](tag : T, negation : Boolean, atom : AtomicFormula[X]) extends NNFedGFFormula[T, X]
+case class NNFNot[T, X](tag : T, sub : NNFedGFFormula[T, X]) extends NNFedGFFormula[T, X]
+case class NNFAnd[T, X](tag : T, left : NNFedGFFormula[T,  X], right : NNFedGFFormula[T, X]) extends NNFedGFFormula[T, X]
+case class NNFOr[T, X](tag : T, left : NNFedGFFormula[T, X], right : NNFedGFFormula[T, X]) extends NNFedGFFormula[T, X]
+case class NNFForall[T, X](tag : T, variables : List[X], guard : AtomicFormula[X], sub : NNFedGFFormula[T, X]) extends NNFedGFFormula[T, X]
+case class NNFExist[T, X](tag : T, variable : List[X], guard : AtomicFormula[X], sub : NNFedGFFormula[T, X]) extends NNFedGFFormula[T, X]
 
 
-def nnf[A[_], X](phi : GFFormula[A, X]): NNFedGFFormula[Unit, A, X] = phi match {
+def nnf[X](phi : GFFormula[X]): NNFedGFFormula[Unit, X] = phi match {
   case Not (Atom(a)) => NNFLiteral((), false, a)
   case Not (Not(g)) => nnf(g)
   case Not (And(g, h)) => NNFOr((), nnf (Not(g)), nnf (Not(h)))
@@ -44,8 +44,8 @@ def relationalSymbols : LazyList[RelationalSymbol] =
 
 def tagWithParameters
   [T, R, X]
-  (phi : NNFedGFFormula[T, AtomicFormula, X]) 
-  : NNFedGFFormula[Set[X], AtomicFormula, X] = phi match
+  (phi : NNFedGFFormula[T, X]) 
+  : NNFedGFFormula[Set[X], X] = phi match
     case NNFLiteral(tag, negation, atom) => NNFLiteral(Set.from(atom.varlist), negation, atom)
     case NNFNot(tag, sub) => {
       val r = tagWithParameters(sub)
