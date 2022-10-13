@@ -1,3 +1,4 @@
+import java.{util => ju}
 
 sealed abstract class NNFedGFFormula[T, A[_], X] {
   val tag : T
@@ -25,14 +26,26 @@ def nnf[A[_], X](phi : GFFormula[A, X]): NNFedGFFormula[Unit, A, X] = phi match 
   case Forall(variable, p, g) => NNFForall ((), variable, p, nnf(g))
 }
 
-case class AtomicFormula[R, X](relation : R, varlist : List[X])
+type RelationalSymbol = String
 
-type AtomicFormula1[R] = ({ type T[X] = AtomicFormula[R, X] })
+// we need to generate new relational symbols so lets fix R right away 
+// case class AtomicFormula[R, X](relation : R, varlist : List[X])
+case class AtomicFormula[X](relation : RelationalSymbol, varlist : List[X])
+
+def relationalSymbols : LazyList[RelationalSymbol] = 
+  val alpha = LazyList.from("abcdefghijklmnopqrstuvwxyz")
+  def go(xs : LazyList[RelationalSymbol]) : LazyList[RelationalSymbol] =
+    for (a <- alpha; x <- xs)
+      yield (a.toString() + x)
+  
+  go(LazyList())
+
+// type AtomicFormula1[R] = ({ type T[X] = AtomicFormula[R, X] })
 
 def tagWithParameters
   [T, R, X]
-  (phi : NNFedGFFormula[T, ({ type T[X] = AtomicFormula[R, X] })#T, X]) 
-  : NNFedGFFormula[Set[X], ({ type T[X] = AtomicFormula[R, X] })#T, X] = phi match
+  (phi : NNFedGFFormula[T, AtomicFormula, X]) 
+  : NNFedGFFormula[Set[X], AtomicFormula, X] = phi match
     case NNFLiteral(tag, negation, atom) => NNFLiteral(Set.from(atom.varlist), negation, atom)
     case NNFNot(tag, sub) => {
       val r = tagWithParameters(sub)
