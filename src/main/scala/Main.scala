@@ -4,7 +4,7 @@ import cats.Functor
   val phi =
     Exist(List('x'), AtomicFormula("n", List('x')),
       Forall(List('y'), AtomicFormula("a", List('x', 'y')),
-        Not(Exist(List('z'), AtomicFormula("p", List('x', 'y')), 
+        Not(Exist(List('z'), AtomicFormula("p", List('x', 'z')), 
           Forall(List('x'), AtomicFormula("a", List('x', 'z')), 
             And(Atom(AtomicFormula("b", List('z', 'z'))),
                 Atom(AtomicFormula("c", List('x', 'x')))))))))
