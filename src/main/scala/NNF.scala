@@ -1,5 +1,6 @@
 
 import cats.syntax.flatMap
+import cats.conversions.variance
 
 abstract class Pretty:
   def pretty(): String = prettyPrio(-2)
@@ -55,12 +56,32 @@ def nnf[X](phi : GFFormula[X]): NNFedGFFormula[Unit, X] = phi match {
 }
 
 type RelationalSymbol = String
+type FunctionalSymbol = String
+
+sealed abstract class Term[X] {
+  def freeVars() : Set[X] = this match
+    case VarTerm(variable) => Set(variable)
+    case FuncTerm(function, arglist) => Set.from( arglist.flatMap(x => x.freeVars()) )
+}
+
+case class VarTerm[X](variable : X) extends Term[X]
+case class FuncTerm[X](function : FunctionalSymbol, arglist : List[Term[X]]) extends Term[X]
+
+def substitute[X](term : Term[X], variable : X, subst : Term[X]) : Term[X] = term match
+  case VarTerm(var1) => if (var1 == variable) then subst else term
+  case FuncTerm(function, arglist) => FuncTerm(function, arglist . map(substitute(_, variable, subst)))
 
 // we need to generate new relational symbols so lets fix R right away 
 // case class AtomicFormula[R, X](relation : R, varlist : List[X])
-case class AtomicFormula[X](relation : RelationalSymbol, varlist : List[X]) extends Pretty:
+case class AtomicFormula[X](relation : RelationalSymbol, arglist : List[Term[X]]) extends Pretty:
   override def prettyPrio(prio : Int) : String =
-    this.relation + "(" + commaInterleaved(this.varlist.map(_.toString)) + ")"
+    this.relation + "(" + commaInterleaved(this.arglist.map(_.toString)) + ")"
+  
+  def freeVars() : Set[X] = Set.from( arglist.flatMap(x => x.freeVars()) )
+
+def substitute2[X](phi : AtomicFormula[X], variable : X, term : Term[X]) = phi match
+  case AtomicFormula(relation, arglist) => AtomicFormula(relation, arglist.map(substitute(_, variable, term)))
+
 
 def relationalSymbols : LazyList[RelationalSymbol] = 
   val alpha = LazyList.from("abcdefghijklmnopqrstuvwxyz")
@@ -77,7 +98,7 @@ def tagWithFreeVariables
   [T, R, X]
   (phi : NNFedGFFormula[T, X]) 
   : NNFedGFFormula[Set[X], X] = phi match
-    case NNFLiteral(tag, sign, atom) => NNFLiteral(Set.from(atom.varlist), sign, atom)
+    case NNFLiteral(tag, sign, atom) => NNFLiteral(atom.freeVars(), sign, atom)
     case NNFAnd(tag, left, right) => {
       val l = tagWithFreeVariables(left)
       val r = tagWithFreeVariables(right)
@@ -90,10 +111,10 @@ def tagWithFreeVariables
     }
     case NNFForall(_, variables, guard, sub) =>
       val r = tagWithFreeVariables(sub)
-      NNFForall(r.tag concat guard.varlist diff Set.from(variables), variables, guard, r)
+      NNFForall((r.tag concat guard.freeVars()) diff Set.from(variables), variables, guard, r)
     case NNFExist(tag, variables, guard, sub) =>
       val r = tagWithFreeVariables(sub)
-      NNFExist(r.tag concat guard.varlist diff Set.from(variables), variables, guard, r)
+      NNFExist((r.tag concat guard.freeVars()) diff Set.from(variables), variables, guard, r)
   
   
   

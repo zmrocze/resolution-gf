@@ -25,12 +25,12 @@ def struct[T, A[_], X](phi : NNFedGFFormula[T, X]) : Set[NNFedGFFormula[Unit, X]
         case NNFAnd(tag, left, right) => NNFAnd((), structRec(left), structRec(right)) 
         case NNFOr(tag, left, right) => NNFOr((), structRec(left), structRec(right))
         case NNFForall(tag, variables, guard, sub) => 
-            // We rewrite only subformulas of form Forall
+            // We rewrite only subformulas
             if firstInvocation then
                 return NNFForall((), variables, guard, structRec(sub))
             else
                 val freeVars = tag.toList
-                val newAtom = AtomicFormula(newRel(), freeVars)
+                val newAtom = AtomicFormula(newRel(), freeVars.map(VarTerm(_)))
                 val sub1 = structRec(sub)
                 val defining = NNFForall((), freeVars, newAtom, NNFForall((), variables, guard, sub1))
                 res += defining
