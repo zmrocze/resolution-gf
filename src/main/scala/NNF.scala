@@ -33,22 +33,22 @@ sealed abstract class NNFedGFFormula[T, X] extends Pretty {
         "∃ (" + commaInterleaved(variables.map(_.toString)) + ") " + guard.pretty() + " ∧ " + sub.prettyPrio(6))
   }
 
-  def substituted(variable : X , term : Term[X]) 
-  : NNFedGFFormula[T, X] = this match
-    case NNFLiteral(tag, sign, AtomicFormula(relation, arglist)) => 
-        NNFLiteral(tag, sign, AtomicFormula(relation, arglist.map(_.substituted(variable, term))))
-    case NNFAnd(tag, left, right) => NNFAnd(tag, left.substituted(variable, term), right.substituted(variable, term))
-    case NNFOr(tag, left, right) => NNFOr(tag, left.substituted(variable, term), right.substituted(variable, term))
-    case NNFForall(tag, variables, guard, sub) => 
-        val (guard1 , sub1) = if variables.contains(variable) 
-            then (guard, sub) 
-            else (guard.substituted(variable, term) , sub.substituted(variable, term))
-        NNFForall(tag, variables, guard1, sub1)
-    case NNFExist(tag, variables, guard, sub) => 
-        val (guard1 , sub1) = if variables.contains(variable) 
-            then (guard, sub) 
-            else (guard.substituted(variable, term) , sub.substituted(variable, term))
-        NNFExist(tag, variables, guard1, sub1)
+  // def substituted(variable : X , term : Term[X]) 
+  // : NNFedGFFormula[T, X] = this match
+  //   case NNFLiteral(tag, sign, AtomicFormula(relation, arglist)) => 
+  //       NNFLiteral(tag, sign, AtomicFormula(relation, arglist.map(_.substituted(variable, term))))
+  //   case NNFAnd(tag, left, right) => NNFAnd(tag, left.substituted(variable, term), right.substituted(variable, term))
+  //   case NNFOr(tag, left, right) => NNFOr(tag, left.substituted(variable, term), right.substituted(variable, term))
+  //   case NNFForall(tag, variables, guard, sub) => 
+  //       val (guard1 , sub1) = if variables.contains(variable) 
+  //           then (guard, sub) 
+  //           else (guard.substituted(variable, term) , sub.substituted(variable, term))
+  //       NNFForall(tag, variables, guard1, sub1)
+  //   case NNFExist(tag, variables, guard, sub) => 
+  //       val (guard1 , sub1) = if variables.contains(variable) 
+  //           then (guard, sub) 
+  //           else (guard.substituted(variable, term) , sub.substituted(variable, term))
+  //       NNFExist(tag, variables, guard1, sub1)
 
 }
 
@@ -57,7 +57,7 @@ case class NNFLiteral[T, X](tag : T, sign : Boolean, atom : AtomicFormula[X]) ex
 case class NNFAnd[T, X](tag : T, left : NNFedGFFormula[T,  X], right : NNFedGFFormula[T, X]) extends NNFedGFFormula[T, X]
 case class NNFOr[T, X](tag : T, left : NNFedGFFormula[T, X], right : NNFedGFFormula[T, X]) extends NNFedGFFormula[T, X]
 case class NNFForall[T, X](tag : T, variables : List[X], guard : AtomicFormula[X], sub : NNFedGFFormula[T, X]) extends NNFedGFFormula[T, X]
-case class NNFExist[T, X](tag : T, variable : List[X], guard : AtomicFormula[X], sub : NNFedGFFormula[T, X]) extends NNFedGFFormula[T, X]
+case class NNFExist[T, X](tag : T, variables : List[X], guard : AtomicFormula[X], sub : NNFedGFFormula[T, X]) extends NNFedGFFormula[T, X]
 
 def nnf[X](phi : GFFormula[X]): NNFedGFFormula[Unit, X] = phi match {
   case Not (Atom(a)) => NNFLiteral((), false, a)
@@ -85,6 +85,12 @@ sealed abstract class Term[X] {
     case VarTerm(var1) => if (var1 == variable) then subst else this
     case FuncTerm(function, arglist) => FuncTerm(function, arglist . map((x => x.substituted(variable, subst))))
 
+  lazy val usedFunctionSymbols : Set[FunctionalSymbol] = this match
+    case VarTerm(variable) => Set.empty
+    case FuncTerm(function, arglist) => 
+      arglist.map(_.usedFunctionSymbols)
+      .fold(Set.from(List(function)))(((x : Set[FunctionalSymbol], y: Set[FunctionalSymbol]) => x concat y))
+  
 }
 
 case class VarTerm[X](variable : X) extends Term[X]
@@ -101,6 +107,9 @@ case class AtomicFormula[X](relation : RelationalSymbol, arglist : List[Term[X]]
   def substituted(variable : X, term : Term[X]) = this match
     case AtomicFormula(relation, arglist) => AtomicFormula(relation, arglist.map((x => x.substituted(variable, term))))
 
+  lazy val usedFunctionSymbols = this match
+    case AtomicFormula(relation, arglist) => arglist.map(_.usedFunctionSymbols).fold(Set.empty)(_ concat _)
+  
 
 def relationalSymbols : LazyList[RelationalSymbol] = 
   val alpha = LazyList.from("abcdefghijklmnopqrstuvwxyz")
