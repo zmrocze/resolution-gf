@@ -32,6 +32,24 @@ sealed abstract class NNFedGFFormula[T, X] extends Pretty {
       case NNFExist(tag, variables, guard, sub) => parens ( 0 < prio, 
         "∃ (" + commaInterleaved(variables.map(_.toString)) + ") " + guard.pretty() + " ∧ " + sub.prettyPrio(6))
   }
+
+  def substituted(variable : X , term : Term[X]) 
+  : NNFedGFFormula[T, X] = this match
+    case NNFLiteral(tag, sign, AtomicFormula(relation, arglist)) => 
+        NNFLiteral(tag, sign, AtomicFormula(relation, arglist.map(_.substituted(variable, term))))
+    case NNFAnd(tag, left, right) => NNFAnd(tag, left.substituted(variable, term), right.substituted(variable, term))
+    case NNFOr(tag, left, right) => NNFOr(tag, left.substituted(variable, term), right.substituted(variable, term))
+    case NNFForall(tag, variables, guard, sub) => 
+        val (guard1 , sub1) = if variables.contains(variable) 
+            then (guard, sub) 
+            else (guard.substituted(variable, term) , sub.substituted(variable, term))
+        NNFForall(tag, variables, guard1, sub1)
+    case NNFExist(tag, variables, guard, sub) => 
+        val (guard1 , sub1) = if variables.contains(variable) 
+            then (guard, sub) 
+            else (guard.substituted(variable, term) , sub.substituted(variable, term))
+        NNFExist(tag, variables, guard1, sub1)
+
 }
 
 case class NNFLiteral[T, X](tag : T, sign : Boolean, atom : AtomicFormula[X]) extends NNFedGFFormula[T, X]
@@ -62,14 +80,15 @@ sealed abstract class Term[X] {
   def freeVars() : Set[X] = this match
     case VarTerm(variable) => Set(variable)
     case FuncTerm(function, arglist) => Set.from( arglist.flatMap(x => x.freeVars()) )
+  
+  def substituted(variable : X, subst : Term[X]) : Term[X] = this match
+    case VarTerm(var1) => if (var1 == variable) then subst else this
+    case FuncTerm(function, arglist) => FuncTerm(function, arglist . map((x => x.substituted(variable, subst))))
+
 }
 
 case class VarTerm[X](variable : X) extends Term[X]
 case class FuncTerm[X](function : FunctionalSymbol, arglist : List[Term[X]]) extends Term[X]
-
-def substitute[X](term : Term[X], variable : X, subst : Term[X]) : Term[X] = term match
-  case VarTerm(var1) => if (var1 == variable) then subst else term
-  case FuncTerm(function, arglist) => FuncTerm(function, arglist . map(substitute(_, variable, subst)))
 
 // we need to generate new relational symbols so lets fix R right away 
 // case class AtomicFormula[R, X](relation : R, varlist : List[X])
@@ -79,8 +98,8 @@ case class AtomicFormula[X](relation : RelationalSymbol, arglist : List[Term[X]]
   
   def freeVars() : Set[X] = Set.from( arglist.flatMap(x => x.freeVars()) )
 
-def substitute2[X](phi : AtomicFormula[X], variable : X, term : Term[X]) = phi match
-  case AtomicFormula(relation, arglist) => AtomicFormula(relation, arglist.map(substitute(_, variable, term)))
+  def substituted(variable : X, term : Term[X]) = this match
+    case AtomicFormula(relation, arglist) => AtomicFormula(relation, arglist.map((x => x.substituted(variable, term))))
 
 
 def relationalSymbols : LazyList[RelationalSymbol] = 
@@ -95,7 +114,7 @@ def relationalSymbols : LazyList[RelationalSymbol] =
 // type AtomicFormula1[R] = ({ type T[X] = AtomicFormula[R, X] })
 
 def tagWithFreeVariables
-  [T, R, X]
+  [T, X]
   (phi : NNFedGFFormula[T, X]) 
   : NNFedGFFormula[Set[X], X] = phi match
     case NNFLiteral(tag, sign, atom) => NNFLiteral(atom.freeVars(), sign, atom)
