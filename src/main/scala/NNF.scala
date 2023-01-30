@@ -2,36 +2,18 @@
 import cats.syntax.flatMap
 import cats.conversions.variance
 
-abstract class Pretty:
-  def pretty(): String = prettyPrio(-2)
-
-  def prettyPrio(prio : Int): String
-
-def commaInterleaved[I <: Iterable[String]](xs : I): String = 
-  Iterator.unfold(xs.iterator){ ys => 
-    if ! ys.hasNext then None
-    else 
-      val x = ys.next
-      Some(x + (if ys.hasNext then ", " else ""), ys)
-  }
-  .fold("")(_ + _)
-
-
 sealed abstract class NNFedGFFormula[T, X] extends Pretty {
   val tag : T
+
+  def toGFormula(): GFFormula[X] = this match
+    case NNFLiteral(tag, sign, atom) => if sign then Atom(atom) else Not(Atom(atom))
+    case NNFAnd(tag, left, right) => And(left.toGFormula(), right.toGFormula())
+    case NNFOr(tag, left, right) => Or(left.toGFormula(), right.toGFormula())
+    case NNFForall(tag, variables, guard, sub) => Forall(variables, guard, sub.toGFormula())
+    case NNFExist(tag, variables, guard, sub) => Exist(variables, guard, sub.toGFormula())
+
   override def prettyPrio(prio : Int): String = 
-    def parens(b : Boolean, str : String) = if b then "(" + str + ")" else str
-    this match {
-      case NNFLiteral(tag, sign, atom) => (if sign then "" else "¬") + atom.pretty()
-      case NNFAnd(tag, left, right) => parens ( 6 < prio, 
-        left.prettyPrio(6) + " ∧ " + right.prettyPrio(6))
-      case NNFOr(tag, left, right) => parens ( 4 < prio, 
-        left.prettyPrio(4) + " ∨ " + right.prettyPrio(4))
-      case NNFForall(tag, variables, guard, sub) => parens ( 0 < prio,
-        "∀ (" + commaInterleaved(variables.map(_.toString)) + ") " + guard.pretty() + " → " + sub.prettyPrio(2))
-      case NNFExist(tag, variables, guard, sub) => parens ( 0 < prio, 
-        "∃ (" + commaInterleaved(variables.map(_.toString)) + ") " + guard.pretty() + " ∧ " + sub.prettyPrio(6))
-  }
+    prettyFormula[NNFedGFFormula[T,X], X](_.toGFormula())(prio)(this)
 
   // def substituted(variable : X , term : Term[X]) 
   // : NNFedGFFormula[T, X] = this match
@@ -76,7 +58,7 @@ def nnf[X](phi : GFFormula[X]): NNFedGFFormula[Unit, X] = phi match {
 type RelationalSymbol = String
 type FunctionalSymbol = String
 
-sealed abstract class Term[X] {
+sealed abstract class Term[X] extends Pretty {
   def freeVars() : Set[X] = this match
     case VarTerm(variable) => Set(variable)
     case FuncTerm(function, arglist) => Set.from( arglist.flatMap(x => x.freeVars()) )
@@ -91,6 +73,11 @@ sealed abstract class Term[X] {
       arglist.map(_.usedFunctionSymbols)
       .fold(Set.from(List(function)))(((x : Set[FunctionalSymbol], y: Set[FunctionalSymbol]) => x concat y))
   
+  def prettyPrio(prio: Int): String = this match
+    case VarTerm(variable) => variable.toString()
+    case FuncTerm(function, arglist) => 
+      function.toString() ++ "(" ++ commaInterleaved(arglist.map(_.prettyPrio(prio))) ++ ")"
+  
 }
 
 case class VarTerm[X](variable : X) extends Term[X]
@@ -100,7 +87,7 @@ case class FuncTerm[X](function : FunctionalSymbol, arglist : List[Term[X]]) ext
 // case class AtomicFormula[R, X](relation : R, varlist : List[X])
 case class AtomicFormula[X](relation : RelationalSymbol, arglist : List[Term[X]]) extends Pretty:
   override def prettyPrio(prio : Int) : String =
-    this.relation + "(" + commaInterleaved(this.arglist.map(_.toString)) + ")"
+    this.relation + "(" + commaInterleaved(this.arglist.map(_.prettyPrio(prio))) + ")"
   
   def freeVars() : Set[X] = Set.from( arglist.flatMap(x => x.freeVars()) )
 

@@ -1,12 +1,32 @@
 
-sealed trait StructedSubFormula[X]
+sealed trait StructedSubFormula[X] extends Pretty {
+    def toGFormula(): GFFormula[X] = this match
+        case StructLiteral(sign, atom) => if sign then Atom(atom) else Not(Atom(atom))
+        case StructAnd(left, right) => And(left.toGFormula(), right.toGFormula())
+        case StructOr(left, right) => Or(left.toGFormula(), right.toGFormula())
+        case StructExist(variables, guard, sub) => Exist(variables, guard, sub.toGFormula())
+    
+    override def prettyPrio(prio : Int): String = 
+        prettyFormula[StructedSubFormula[X], X](_.toGFormula())(prio)(this)
+}
 
 case class StructLiteral[X](sign : Boolean, atom : AtomicFormula[X]) extends StructedSubFormula[X]
 case class StructAnd[X](left : StructedSubFormula[X], right : StructedSubFormula[X]) extends StructedSubFormula[X]
 case class StructOr[X](left : StructedSubFormula[X], right : StructedSubFormula[X]) extends StructedSubFormula[X]
 case class StructExist[X](variables : List[X], guard : AtomicFormula[X], sub : StructedSubFormula[X]) extends StructedSubFormula[X]
 
-sealed trait StructedFormula[X]
+sealed trait StructedFormula[X] extends Pretty {
+    def toGFormula(): GFFormula[X] = this match
+        case StructTopForall(variables1, guard1, quantifier2, sub) => 
+            Forall(variables1, guard1, quantifier2 match
+                case None => sub.toGFormula()
+                case Some((vars2, guard2)) => Forall(vars2, guard2, sub.toGFormula())
+            )
+        case StructNoForall(sub) => sub.toGFormula()
+
+    override def prettyPrio(prio : Int): String = 
+        prettyFormula[StructedFormula[X], X](_.toGFormula())(prio)(this)
+}
 
 // Represents formula of form:
 // Forall(variables1) guard1 -> Forall(variables2) guard2 -> subf
@@ -24,7 +44,7 @@ case class StructTopForall[X](
 case class StructNoForall[X](sub : StructedSubFormula[X]) extends StructedFormula[X]
 
 
-def struct[T, A[_], X](phi : NNFedGFFormula[T, X]) : Set[StructedFormula[X]] =
+def struct[T, X](phi : NNFedGFFormula[T, X]) : Set[StructedFormula[X]] =
     val allUsedRelations : Set[RelationalSymbol] = {
         def rec(psi : NNFedGFFormula[T, X]) : Set[RelationalSymbol] = psi match
             case NNFLiteral(tag, sign, atom) => Set(atom.relation)
@@ -65,8 +85,8 @@ def struct[T, A[_], X](phi : NNFedGFFormula[T, X]) : Set[StructedFormula[X]] =
     
     val t = struct( {
         val r = tagWithFreeVariables(phi)
-        println(r)
-        println()
+        // println(r)
+        // println()
         r
     })
     res += t

@@ -1,4 +1,5 @@
 import cats.Functor
+import scala.util.chaining._
 
 @main def hello: Unit = 
   val phi =
@@ -10,10 +11,37 @@ import cats.Functor
                 Atom(AtomicFormula("c", List(VarTerm('x'), VarTerm('x'))))))))))
   // relationalSymbols.take(64).foreach(println)
   // println(phi)
-  struct({
-      val x = nnf(phi)
-      println(x.pretty())
-      x}
-    ).foreach(x =>
+  // val psi = struct({
+  //     val x = nnf(phi)
+  //     println(x.pretty())
+  //     x}
+  //   )
+  // psi.foreach(x =>
+  //   // println(x.pretty())
+  //   println())
+  // val skolemed = psi.map(skolem)
+  // skolemed.foreach(println)
+  def trace[A <: Pretty](x: A) = {
     println(x.pretty())
-    println())
+    println()
+    x
+  }
+  def traceWith[A](f: A => String)(x: A) = {
+    println(f(x))
+    println()
+    x
+  }
+  phi
+    .pipe(trace[GFFormula[Char]])
+    .pipe(nnf[Char])
+    .pipe(trace)
+    .pipe(struct[Unit,Char])
+    .pipe(traceWith(prettySet))
+    .map(skolem[Char])
+    .pipe(traceWith(prettySet))
+    .map(clausifySkolemed[Char]).foldLeft(ClauseSet[Char](List()))(_ concat _)
+    .pipe(trace)
+  val cnf = clausify(phi)
+  println(cnf.pretty())
+
+  // TODO: use uppercase symbols for relations to visually distinguish from skolems
