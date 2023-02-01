@@ -1,3 +1,14 @@
+# Resolution for (F)GF
+
+Kod w scali, kompiluje się `sbt` (opisane poniżej).
+`main` oblicza zbiór klauzul postaci CNF dla formuły GF, dla przykładu z oryginalnej pracy o rezolucji dla GF. Wypisuje postać po każdym kroku obliczeń. Załączam output programu w pliku main.out.
+
+## notki
+ - każdy etap transformacji definiuje swój typ postaci formuły wynikowej.
+ To duża redundancja liczona linijkami kodu, ale uważam mniej skomplikowania i ukrytych niezmienników.
+ - todo: faktyczny proces rezolucji (to będzie proste)
+ - todo: testy
+
 ## sbt project compiled with Scala 3
 
 ### Usage
