@@ -63,6 +63,14 @@ sealed abstract class Term[X] extends Pretty {
     case VarTerm(variable) => Set(variable)
     case FuncTerm(function, arglist) => Set.from( arglist.flatMap(x => x.freeVars()) )
   
+  def vardepth() : Int = this match
+    case VarTerm(variable) => 0
+    case FuncTerm(function, arglist) =>
+      if arglist.isEmpty then
+        -1
+      else 
+        1 + arglist.map(_.vardepth()).max
+
   def substituted(variable : X, subst : Term[X]) : Term[X] = this match
     case VarTerm(var1) => if (var1 == variable) then subst else this
     case FuncTerm(function, arglist) => FuncTerm(function, arglist . map((x => x.substituted(variable, subst))))
@@ -90,9 +98,19 @@ case class AtomicFormula[X](relation : RelationalSymbol, arglist : List[Term[X]]
     this.relation + "(" + commaInterleaved(this.arglist.map(_.prettyPrio(prio))) + ")"
   
   def freeVars() : Set[X] = Set.from( arglist.flatMap(x => x.freeVars()) )
+  def vardepth() : Int = 
+      if arglist.isEmpty then 
+        -1 
+      else
+        1 + arglist.map(_.vardepth()).max
 
   def substituted(variable : X, term : Term[X]) = this match
     case AtomicFormula(relation, arglist) => AtomicFormula(relation, arglist.map((x => x.substituted(variable, term))))
+
+  def substitutedMany(subs : Map[X, Term[X]]) = 
+    subs.map(identity).foldLeft(this)( (atom, pair) => { (atom, pair) match 
+      case (atom, (x, term)) => atom.substituted(x,term) 
+    })
 
   lazy val usedFunctionSymbols = this match
     case AtomicFormula(relation, arglist) => arglist.map(_.usedFunctionSymbols).fold(Set.empty)(_ concat _)

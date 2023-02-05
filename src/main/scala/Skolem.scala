@@ -17,6 +17,13 @@ sealed trait SkolemedSubFormula[X] extends Pretty:
 case class SkolemLiteral[X](sign : Boolean, atom : AtomicFormula[X]) extends SkolemedSubFormula[X], Pretty {
     override def prettyPrio(prio: Int): String = 
         (if sign then "" else "¬") ++ atom.prettyPrio(prio)
+    
+    def vardepth(): Int = this.atom.vardepth()
+    def freeVars(): Set[X] = this.atom.freeVars()
+
+    def substitutedMany(subs : Map[X, Term[X]]) = this match
+        case SkolemLiteral(sign, atom) => SkolemLiteral(sign, atom.substitutedMany(subs))
+
 }
 case class SkolemAnd[X](left : SkolemedSubFormula[X], right : SkolemedSubFormula[X]) extends SkolemedSubFormula[X]
 case class SkolemOr[X](left : SkolemedSubFormula[X], right : SkolemedSubFormula[X]) extends SkolemedSubFormula[X]
