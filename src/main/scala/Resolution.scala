@@ -27,7 +27,7 @@ def maximals[X](c : UqClause[X]) = {
     c.psis.filter(ismaximal)
 }
 
-def resolve[X](c1 : UqClause[X], c2 : UqClause[X]) : UqClauseSet[X] = UqClauseSet {
+def resolve[X](c1 : UqClause[X], c2 : UqClause[X])(implicit ord: Ordering[X]) : UqClauseSet[X] = UqClauseSet {
     var res : Set[UqClause[X]] = Set.empty
     for (A <- maximals(c1)) {
         for (B <- maximals(c2)) {
@@ -36,7 +36,7 @@ def resolve[X](c1 : UqClause[X], c2 : UqClause[X]) : UqClauseSet[X] = UqClauseSe
                     case None => unit
                     case Some(s) => {
                         val cnew = UqClause((c1.psis excl A) union (c2.psis excl B))
-                        res += cnew.substitutedMany(s)
+                        res = res + cnew.substitutedMany(s)
                     }
             }
         }
@@ -44,7 +44,7 @@ def resolve[X](c1 : UqClause[X], c2 : UqClause[X]) : UqClauseSet[X] = UqClauseSe
     res
 }
 
-def factor[X](c1 : UqClause[X]) : Set[UqClause[X]] = {
+def factor[X](c1 : UqClause[X])(implicit ord: Ordering[X]) : Set[UqClause[X]] = {
     var res : Set[UqClause[X]] = Set.empty
     for (A <- maximals(c1)) {
         for (B <- maximals(c1)) {
@@ -62,7 +62,7 @@ def factor[X](c1 : UqClause[X]) : Set[UqClause[X]] = {
 }
 
 
-def resolution[X](c0 : ClauseSet[X]) : Boolean = {
+def resolution[X](c0 : ClauseSet[X])(implicit ord: Ordering[X]) : Boolean = {
     var C = toUq(c0).clauses
     var continue = true
     while (continue) {
@@ -71,15 +71,15 @@ def resolution[X](c0 : ClauseSet[X]) : Boolean = {
             for (c2 <- C) {
                 val r = resolve(c1, c2).clauses
                 C ++= r
-                if ! r.isEmpty then 
+                if ! (r subsetOf C) then 
                     continue = true
             }
             val f = factor(c1)
             C ++= f
-            if ! f.isEmpty then 
+            if ! (f subsetOf C) then 
                 continue = true
         }
     }
 
-    C contains UqClause(Set.empty)
+    ! (C contains UqClause(Set.empty))
 }
