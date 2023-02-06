@@ -10,26 +10,6 @@ import scala.util.chaining._
           Forall(List('x'), AtomicFormula("a", List(VarTerm('x'), VarTerm('z'))), 
             And(Atom(AtomicFormula("b", List(VarTerm('z'), VarTerm('z')))),
                 Atom(AtomicFormula("c", List(VarTerm('x'), VarTerm('x'))))))))))
-  
-  val phi2 : GFFormula[Int] =
-    Exist(List(0), AtomicFormula("n", List(VarTerm(0))),
-      Forall(List(1), AtomicFormula("a", List(VarTerm(0), VarTerm(1))),
-        Not(Exist(List(2), AtomicFormula("p", List(VarTerm(0), VarTerm(2))), 
-          Forall(List(0), AtomicFormula("a", List(VarTerm(0), VarTerm(2))), 
-            And(Atom(AtomicFormula("b", List(VarTerm(2), VarTerm(2)))),
-                Atom(AtomicFormula("c", List(VarTerm(0), VarTerm(0))))))))))
-  // relationalSymbols.take(64).foreach(println)
-  // println(phi)
-  // val psi = struct({
-  //     val x = nnf(phi)
-  //     println(x.pretty())
-  //     x}
-  //   )
-  // psi.foreach(x =>
-  //   // println(x.pretty())
-  //   println())
-  // val skolemed = psi.map(skolem)
-  // skolemed.foreach(println)
   def trace[A <: Pretty](x: A) = {
     println(x.pretty())
     println()
@@ -53,6 +33,6 @@ import scala.util.chaining._
   val cnf = clausify(phi)
   println(cnf.pretty())
 
-  println(SAT[Int](phi2))
+  // println(SAT[Int](phi2))
 
   // TODO: use uppercase symbols for relations to visually distinguish from skolems

@@ -37,16 +37,22 @@ def termMGU[X](A : List[Term[X]], B : List[Term[X]])(implicit ord: Ordering[X]):
     }
 
     def unify(a : Term[X], b : Term[X]): Boolean = {
-        (a,b) match
+        // println( a.pretty() ++ "=?=" ++ b.pretty() )
+        if a.substitutedMany(S) == b.substitutedMany(S) then 
+            true
+        else (a,b) match
             case (aa@VarTerm(ax), bb@VarTerm(bx)) =>
-                if (ax < bx) then
+                if (ax <= bx) then
                     substitute(bx, aa)
                 else 
                     substitute(ax, bb)
             case (aa@VarTerm(ax), bb@FuncTerm(_, _)) =>
-                substitute(ax, bb)
-            case (aa@FuncTerm(_, _), bb@VarTerm(bx)) =>
-                substitute(bx, aa)
+                if (bb.freeVars() contains ax) then
+                    false
+                else 
+                    substitute(ax, bb)
+            case (aa@FuncTerm(_, _), bb@VarTerm(bx)) => unify(bb, aa)
+                // substitute(bx, aa)
             case (aa@FuncTerm(asym, aargs), bb@FuncTerm(bsym, bargs)) =>
                 asym == bsym && aargs.zip(bargs).forall(unify)
         }

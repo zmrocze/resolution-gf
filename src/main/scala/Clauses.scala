@@ -39,4 +39,25 @@ def clausify[X](psi : GFFormula[X]) : ClauseSet[X] =
     .pipe(struct[Unit, X])
     .map(skolem[X])
     .map(clausifySkolemed[X]).foldLeft(ClauseSet[X](List()))(_ concat _)
-    
+
+def verboseClausify[X](psi : GFFormula[X]) : ClauseSet[X] = 
+    def trace[A <: Pretty](msg : String)(x: A) = {
+        println(msg ++ " " ++ x.pretty())
+        println()
+        x
+    }
+    def traceWith[A](msg : String)(f: A => String)(x: A) = {
+        println(msg ++ " " ++ f(x))
+        println()
+        x
+    }
+    psi
+    .pipe(trace[GFFormula[X]]("Initial formula:"))
+    .pipe(nnf[X])
+    .pipe(trace("NNFed:"))
+    .pipe(struct[Unit,X])
+    .pipe(traceWith("Structed:")(prettySet))
+    .map(skolem[X])
+    .pipe(traceWith("Skolemized:")(prettySet))
+    .map(clausifySkolemed[X]).foldLeft(ClauseSet[X](List()))(_ concat _)
+    .pipe(trace("Clausified:"))
