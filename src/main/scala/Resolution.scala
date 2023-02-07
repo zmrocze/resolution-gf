@@ -19,7 +19,8 @@ def toUq[X](c : ClauseSet[X]) = {
     UqClauseSet(c.clauses.map( x => UqClause(x.psis.toSet) ).toSet)
 }
 def greater[X](a : SkolemLiteral[X] , b : SkolemLiteral[X]) = 
-        (a.vardepth() < b.vardepth()) || (a.freeVars() subsetOf b.freeVars())
+    (a.vardepth() < b.vardepth()) 
+    || ((a.freeVars() subsetOf b.freeVars()) && (a.freeVars() != b.freeVars()))
 
 def maximals[X](c : UqClause[X]) = {    
     def ismaximal(A : SkolemLiteral[X]) = 
@@ -41,21 +42,20 @@ def resolve[X](c1 : UqClause[X], c2 : UqClause[X])(implicit ord: Ordering[X]) : 
             }
         }
     }
+    println(UqClauseSet(res).pretty())
     res
 }
 
 def factor[X](c1 : UqClause[X])(implicit ord: Ordering[X]) : Set[UqClause[X]] = {
     var res : Set[UqClause[X]] = Set.empty
     for (A <- maximals(c1)) {
-        for (B <- c1.psis) {
-            if (A != B) {
+        for (B <- c1.psis excl A) {
             mgu[X](A.atom, B.atom) match
                 case None => unit
                 case Some(s) => {
                     val cnew = UqClause((c1.psis excl B))
                     res += cnew.substitutedMany(s)
                 }
-            }
         }
     }
     res

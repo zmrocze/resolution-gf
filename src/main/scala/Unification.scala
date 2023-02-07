@@ -14,7 +14,7 @@ def termMGU[X](A : List[Term[X]], B : List[Term[X]])(implicit ord: Ordering[X]):
     var S : Map[X, Term[X]] = Map.empty
     
     def nocycle() : Boolean = {
-        S.exists( (x , t ) => t match
+        ! S.exists( (x , t ) => t match
             case VarTerm(variable) => false
             case ft@FuncTerm(function, arglist) => ft.freeVars().contains(x)
          )
