@@ -42,7 +42,6 @@ def resolve[X](c1 : UqClause[X], c2 : UqClause[X])(implicit ord: Ordering[X]) : 
             }
         }
     }
-    println(UqClauseSet(res).pretty())
     res
 }
 
@@ -71,19 +70,15 @@ def resolutionAux[X](c0 : ClauseSet[X])(implicit ord: Ordering[X]) : Set[UqClaus
         for (c1 <- C) {
             for (c2 <- C excl c1) {
                 val r = resolve(c1, c2).clauses
-                C ++= r
                 if ! (r subsetOf C) then 
                     continue = true
+                C ++= r
             }
             val f = factor(c1)
-            C ++= f
             if ! (f subsetOf C) then 
                 continue = true
+            C ++= f
         }
-        if (i >= 1) { 
-            println("turn")
-        }
-        i = i + 1
     }
     C
 }

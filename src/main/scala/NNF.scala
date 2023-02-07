@@ -69,7 +69,8 @@ sealed abstract class Term[X] extends Pretty {
       if arglist.isEmpty then
         -1
       else 
-        1 + arglist.map(_.vardepth()).max
+        val d = arglist.map(_.vardepth()).max
+        if d <= -1 then -1 else 1 + d
 
   def substituted(variable : X, subst : Term[X]) : Term[X] = this match
     case VarTerm(var1) => if (var1 == variable) then subst else this
@@ -107,7 +108,9 @@ case class AtomicFormula[X](relation : RelationalSymbol, arglist : List[Term[X]]
       if arglist.isEmpty then 
         -1 
       else
-        1 + arglist.map(_.vardepth()).max
+        val d = arglist.map(_.vardepth()).max
+        if d <= -1 then -1 else 1 + d
+        
 
   def substituted(variable : X, term : Term[X]) = this match
     case AtomicFormula(relation, arglist) => AtomicFormula(relation, arglist.map((x => x.substituted(variable, term))))
