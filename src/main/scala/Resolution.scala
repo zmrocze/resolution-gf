@@ -1,5 +1,6 @@
 import cats.syntax.contravariant
 import cats.instances.unit
+import scala.util.control.NonLocalReturns.*
 
 case class UqClause[X](psis : Set[SkolemLiteral[X]])  extends Pretty {
     def concat(y : Clause[X]) = Clause(this.psis.concat(y.psis).toList)
@@ -65,22 +66,27 @@ def resolutionAux[X](c0 : ClauseSet[X])(implicit ord: Ordering[X]) : Set[UqClaus
     var C = toUq(c0).clauses
     var continue = true
     var i = 0
-    while (continue) {
-        continue = false
-        for (c1 <- C) {
-            for (c2 <- C excl c1) {
-                val r = resolve(c1, c2).clauses
-                if ! (r subsetOf C) then 
+    returning { 
+        while (continue) {
+            continue = false
+            for (c1 <- C) {
+                for (c2 <- C excl c1) {
+                    val r = resolve(c1, c2).clauses
+                    if ! (r subsetOf C) then 
+                        continue = true
+                    C ++= r
+                    if (r contains UqClause(Set.empty)) then throwReturn(C)
+                }
+                val f = factor(c1)
+                if ! (f subsetOf C) then 
                     continue = true
-                C ++= r
+                C ++= f
+                if (f contains UqClause(Set.empty)) then throwReturn(C)
             }
-            val f = factor(c1)
-            if ! (f subsetOf C) then 
-                continue = true
-            C ++= f
         }
+        C
     }
-    C
+    // C
 }
 
 def resolution[X](c0 : ClauseSet[X])(implicit ord: Ordering[X]) : Boolean = {

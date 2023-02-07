@@ -9,7 +9,8 @@ import scala.util.chaining._
         Not(Exist(List('z'), AtomicFormula("p", List(VarTerm('x'), VarTerm('z'))), 
           Forall(List('x'), AtomicFormula("a", List(VarTerm('x'), VarTerm('z'))), 
             And(Atom(AtomicFormula("b", List(VarTerm('z'), VarTerm('z')))),
-                Atom(AtomicFormula("c", List(VarTerm('x'), VarTerm('x'))))))))))
+                Atom(AtomicFormula("c", List(VarTerm('x'), VarTerm('x')))))))))
+    )
   def trace[A <: Pretty](x: A) = {
     println(x.pretty())
     println()

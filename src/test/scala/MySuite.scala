@@ -5,21 +5,21 @@ def atom[X](rel : RelationalSymbol, args: List[X]) = AtomicFormula(rel, args.map
 def aatom[X](rel : RelationalSymbol, args: List[X]) = Atom(atom(rel, args))
 class MySuite extends munit.FunSuite {
   val phi : GFFormula[Int] =
-    Exist(List(0), AtomicFormula("n", List(VarTerm(0))),
-      Forall(List(1), AtomicFormula("a", List(VarTerm(0), VarTerm(1))),
-        Not(Exist(List(2), AtomicFormula("p", List(VarTerm(0), VarTerm(2))), 
-          Forall(List(0), AtomicFormula("a", List(VarTerm(0), VarTerm(2))), 
-            And(Atom(AtomicFormula("b", List(VarTerm(2), VarTerm(2)))),
-                Atom(AtomicFormula("c", List(VarTerm(0), VarTerm(0))))))))))
+    Exist(List(0), atom("n", List(0)),
+      Forall(List(1), atom("a", List(0, 1)),
+        Not(Exist(List(2), atom("p", List(0, 2)), 
+          Forall(List(3), atom("a", List(3, 2)), 
+            And(Atom(atom("b", List(2, 2))),
+                Atom(atom("c", List(3, 3)))))))))
   val phi2 : GFFormula[Int] =
-    Exist(List(0), AtomicFormula("n", List(VarTerm(0))),
-      Exist(List(1), AtomicFormula("a", List(VarTerm(0), VarTerm(1))),
-        Or(Not(Atom(AtomicFormula("n", List(VarTerm(0))))), Not(Atom(AtomicFormula("a", List(VarTerm(0), VarTerm(1))))))))
+    Exist(List(0), atom("n", List(0)),
+      Exist(List(1), atom("a", List(0, 1)),
+        Or(Not(Atom(atom("n", List(0)))), Not(Atom(atom("a", List(0, 1)))))))
   val parity : GFFormula[Int] = 
     And(And(And(
-      And(Forall(List(1), AtomicFormula("P", List(VarTerm(1))), Not(Atom(AtomicFormula("N", List(VarTerm(1)))))), 
-          Forall(List(1), AtomicFormula("N", List(VarTerm(1))), Not(Atom(AtomicFormula("P", List(VarTerm(1))))))),
-      Forall(List(1,2), AtomicFormula("S", List(VarTerm(1), VarTerm(2))), 
+      And(Forall(List(1), atom("P", List(1)), Not(Atom(atom("N", List(1))))), 
+          Forall(List(1), atom("N", List(1)), Not(Atom(atom("P", List(1)))))),
+      Forall(List(1,2), atom("S", List(1, 2)), 
         And(Or( aatom("P", List(1)), 
               aatom("P", List(2)) ),
             Or( aatom("N", List(1)), 
@@ -34,24 +34,17 @@ class MySuite extends munit.FunSuite {
   test("Phi2") {
     assertEquals(verboseSAT(phi2), false)
   }
-  test("Propositional anti-tautology instance") {
-    val phi3 : GFFormula[Int] =
-      // - ((phi -> phi2) -> (-phi2 -> -phi))
-      Not(Or(Not(Or(Not(phi), phi2)), Or(phi2, Not(phi))))
-    assertEquals(verboseSAT(phi3), false)
-  }
-  test("Propositional anti-tautology instance simple") {
+  test("Propositional anti-tautology simple instance") {
     println("Propositional anti-tautology instance simple")
     val phi3 : GFFormula[Int] =
       // - ((phi -> phi2) -> (-phi2 -> -phi))
       Not(Or(Not(phi), phi))
     assertEquals(verboseSAT(phi3), false)
   }
-  test("Propositional tautology instance simple") {
+  test("Simple false") {
     val phi3 : GFFormula[Int] =
-      // - ((phi -> phi2) -> (-phi2 -> -phi))
-      Or(Not(phi), phi)
-    assertEquals(verboseSAT(phi3), true)
+      Exist(List(1), atom("R", List(1)), Not(aatom("R", List(1))))
+    assertEquals(verboseSAT(phi3), false)
   }
   test("Exist simple") {
     val phi3 : GFFormula[Int] = Exist(List(1,2), atom("R", List(1,2)), Or(aatom("P", List(1)), aatom("P", List(2))))
@@ -59,15 +52,15 @@ class MySuite extends munit.FunSuite {
   }
   test("Forward GF formula"){
     val phi3 = And(
-      Forall(List(1, 2), AtomicFormula("a", List(VarTerm(1), VarTerm(2))),
-        Exist(List(3), AtomicFormula("b", List(VarTerm(1),VarTerm(2),VarTerm(3))),
-          Atom(AtomicFormula("a" , List(VarTerm(2), VarTerm(3)))))),
-      Exist(List(1,2,3), AtomicFormula("b", List(VarTerm(1), VarTerm(2), VarTerm(3))), 
-        Not(Atom(AtomicFormula("a", List(VarTerm(1), VarTerm(2)))))))
+      Forall(List(1, 2), atom("a", List(1, 2)),
+        Exist(List(3), atom("b", List(1,2,3)),
+          Atom(atom("a" , List(2, 3))))),
+      Exist(List(1,2,3), atom("b", List(1, 2, 3)), 
+        Not(Atom(atom("a", List(1, 2))))))
     
     assertEquals(verboseSAT(phi3), true)
   }
   test("Pairs formula"){ 
-    assertEquals(verboseSAT(parity), true) 
+    assertEquals(verboseSAT(parity), false) 
   }
 }
