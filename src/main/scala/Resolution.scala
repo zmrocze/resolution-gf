@@ -35,16 +35,10 @@ def resolve(c1 : UqClause[Int], c2 : UqClause[Int])(implicit ord: Ordering[Int])
     for (A <- maximals(c1)) {
         for (B <- maximals(c2)) {
             if (A.sign == ! B.sign) {
-                println("start")
                 mguResolvedClause(A, B, c1, c2) match
                     case None => unit
                     case Some(cnew) => {
-                        println("in resolve maximals: A=" ++ A.pretty() ++ " B= " ++ B.pretty())
-                        println("in resolve clauses: c1=" ++ c1.pretty() ++ " c2= " ++ c2.pretty())
-                        // val cnew = UqClause((c1.psis excl A) union (c2.psis excl B))
-                        println(cnew.pretty())
                         res = res + cnew
-                        print("end")
                     }
             }
         }

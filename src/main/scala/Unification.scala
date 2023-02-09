@@ -22,19 +22,10 @@ def mguResolvedClause[X](AA : SkolemLiteral[X], BB : SkolemLiteral[X], c1 : UqCl
     val A1: AtomicFormula[Either[X,X]] = A.fmaped[Either[X, X]](Left(_))
     val B1: AtomicFormula[Either[X,X]] = B.fmaped[Either[X, X]](Right(_))
     val s = mgu(A1, B1)(lexOrd)
-    println("in mgu:" ++ A1.pretty() ++ B1.pretty())
     s match
         case None => None
         case Some(x) => {
             val normalization = normalize[Either[X,X]](A1.substitutedMany(x))
-            println("unified:")
-            println(A1.substitutedMany(x).pretty())
-            println("substitution")
-            println(x)
-            println("normalization:")
-            println(normalization)
-            println("A1: " ++ A1.pretty() ++ " B1: " ++ B1.pretty())
-            println("c1: " ++ c1.pretty() ++ " c2: " ++ c2.pretty())
             def rename(lr : X => Either[X,X])( cs : Set[SkolemLiteral[X]]): Set[SkolemLiteral[Int]]  = {
                 cs.map( l => l.fmaped(lr).substitutedMany(x).fmaped(normalization.apply) )
             }

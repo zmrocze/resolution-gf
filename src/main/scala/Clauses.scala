@@ -37,7 +37,7 @@ def clausify[X](psi : GFFormula[X]) : ClauseSet[X] =
     psi
     .pipe(nnf[X])
     .pipe(struct[Unit, X])
-    .map(skolem[X])
+    .pipe(mapSkolem[X])
     .map(clausifySkolemed[X]).foldLeft(ClauseSet[X](List()))(_ concat _)
 
 def verboseClausify[X](psi : GFFormula[X]) : ClauseSet[X] = 
@@ -57,7 +57,7 @@ def verboseClausify[X](psi : GFFormula[X]) : ClauseSet[X] =
     .pipe(trace("NNFed:"))
     .pipe(struct[Unit,X])
     .pipe(traceWith("Structed:")(prettySet))
-    .map(skolem[X])
+    .pipe(mapSkolem[X])
     .pipe(traceWith("Skolemized:")(prettySet))
     .map(clausifySkolemed[X]).foldLeft(ClauseSet[X](List()))(_ concat _)
     .pipe(trace("Clausified:"))

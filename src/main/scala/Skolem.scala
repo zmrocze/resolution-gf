@@ -62,29 +62,8 @@ sealed trait SkolemedFormula[X] extends Pretty {
 // The argument types should be more precise, returned is Forall (psi) where psi is quantifier free, 
 // phi should be Forall (psi) where psi only contains existentail quantifiers
 def skolem[X]
-  (phi : StructedFormula[X]) 
+  (newFun : () => RelationalSymbol)(phi : StructedFormula[X]) 
   : SkolemedFormula[X] = 
-
-    val allUsedFunctionalSymbols : Set[FunctionalSymbol] = {
-        def rec(psi : StructedSubFormula[X]) : Set[FunctionalSymbol] = psi match
-            case StructLiteral(sign, atom) => atom.usedFunctionSymbols
-            case StructAnd(left, right) => rec(left) ++ rec(right)
-            case StructOr(left, right) => rec(left) ++ rec(right)
-            case StructExist(variable, guard, sub) => rec(sub) concat guard.usedFunctionSymbols
-
-        phi match
-            case ro @ StructTopForall(variables1, guard1, quantifier2, sub) =>
-                guard1.usedFunctionSymbols ++ (ro.guard2().map(_.usedFunctionSymbols).toList.flatten)
-            case StructNoForall(sub) => rec(sub)
-    }
-    var newFunctionalSymbols = relationalSymbols . filter (x => ! (allUsedFunctionalSymbols contains x))
-    
-    def newFun() : RelationalSymbol = newFunctionalSymbols match
-        case x #:: xs => {
-            newFunctionalSymbols = xs
-            x
-        }
-        case _ => throw new Error("List is infinite, impossible.")
 
     def skolemRec(bounded : Set[X], psi : StructedSubFormula[X]) : SkolemedSubFormula[X] = psi match
         case StructLiteral(sign, atom) => SkolemLiteral(sign, atom)
@@ -101,6 +80,29 @@ def skolem[X]
             SkolemTopForall(variables, guard, mquantifier2, 
                 skolemRec(Set.from(variables) concat mquantifier2.map((x,y)=>x).toList.flatMap(Set.from), sub))
   
-// def mapSkolem[X]
-//   (phi : List[StructedFormula[X]]
-//   : SkolemedFormula[X] = 
+def mapSkolem[X](phis : Set[StructedFormula[X]]): Set[SkolemedFormula[X]] = 
+
+    val allUsedFunctionalSymbols : Set[FunctionalSymbol] = {
+        def rec(psi : StructedSubFormula[X]) : Set[FunctionalSymbol] = psi match
+            case StructLiteral(sign, atom) => atom.usedFunctionSymbols
+            case StructAnd(left, right) => rec(left) ++ rec(right)
+            case StructOr(left, right) => rec(left) ++ rec(right)
+            case StructExist(variable, guard, sub) => rec(sub) concat guard.usedFunctionSymbols
+
+        phis.map{phi => phi  match
+            case ro @ StructTopForall(variables1, guard1, quantifier2, sub) =>
+                guard1.usedFunctionSymbols ++ (ro.guard2().map(_.usedFunctionSymbols).toList.flatten)
+            case StructNoForall(sub) => rec(sub)
+        }.foldLeft(Set.empty)(_ union _)
+    }
+    var newFunctionalSymbols = relationalSymbols . filter (x => ! (allUsedFunctionalSymbols contains x))
+    
+    def newFun() : RelationalSymbol = newFunctionalSymbols match
+        case x #:: xs => {
+            newFunctionalSymbols = xs
+            println("skolem: " ++ x.toString())
+            x
+        }
+        case _ => throw new Error("List is infinite, impossible.")
+
+    phis.map(skolem(newFun))
