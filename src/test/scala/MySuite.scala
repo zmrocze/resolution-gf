@@ -3,6 +3,7 @@
 
 def atom[X](rel : RelationalSymbol, args: List[X]) = AtomicFormula(rel, args.map(VarTerm(_)))
 def aatom[X](rel : RelationalSymbol, args: List[X]) = Atom(atom(rel, args))
+def ands[X](args: List[GFFormula[X]]) = args.tail.foldLeft(args.head)((x, y) =>  And(x, y))
 class MySuite extends munit.FunSuite {
   val phi : GFFormula[Int] =
     Exist(List(0), atom("n", List(0)),
@@ -18,7 +19,7 @@ class MySuite extends munit.FunSuite {
   val parity : GFFormula[Int] = 
     And(And(And(
       And(Forall(List(1), atom("P", List(1)), Not(Atom(atom("N", List(1))))), 
-          Forall(List(1), atom("N", List(1)), Not(Atom(atom("P", List(1)))))),
+          Forall(List(2), atom("N", List(2)), Not(Atom(atom("P", List(2)))))),
       Forall(List(1,2), atom("S", List(1, 2)), 
         And(Or( aatom("P", List(1)), 
               aatom("P", List(2)) ),
@@ -61,6 +62,29 @@ class MySuite extends munit.FunSuite {
     assertEquals(verboseSAT(phi3), true)
   }
   test("Pairs formula"){ 
-    assertEquals(verboseSAT(parity), false) 
+    assertEquals(verboseSAT(parity), true) 
   }
+  // val phidebug : GFFormula[Int] = 
+  //   ands(List(
+  //     And(Forall(List(1), atom("P", List(1)), Not(Atom(atom("N", List(1))))), 
+  //         Forall(List(2), atom("N", List(2)), Not(Atom(atom("P", List(2))))))
+  //         ,
+  //     Forall(List(3,4), atom("S", List(3, 4)), 
+  //       And(
+  //         Or( aatom("P", List(3)), 
+  //             aatom("P", List(4)) )
+  //             ,
+  //           Or( aatom("N", List(3)), 
+  //             aatom("N", List(4)) ))
+  //           ),
+  //             // ,
+  //     Exist(List(5), atom("P", List(5)), aatom("P", List(5))),
+  //     Forall(List(6), atom("P", List(6)), 
+  //       Exist(List(7), atom("S", List(6,7)), aatom("S", List(6,7))))
+  //     ))
+  // val parityUnsat = ands(List(
+  //   parity,
+  //   Forall()
+  // ))
+  
 }

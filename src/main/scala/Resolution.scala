@@ -50,12 +50,14 @@ def factor[X](c1 : UqClause[X])(implicit ord: Ordering[X]) : Set[UqClause[X]] = 
     var res : Set[UqClause[X]] = Set.empty
     for (A <- maximals(c1)) {
         for (B <- c1.psis excl A) {
-            mgu[X](A.atom, B.atom) match
-                case None => unit
-                case Some(s) => {
-                    val cnew = UqClause((c1.psis excl B))
-                    res += cnew.substitutedMany(s)
-                }
+            if (A.sign == B.sign) {
+                mgu[X](A.atom, B.atom) match
+                    case None => unit
+                    case Some(s) => {
+                        val cnew = UqClause((c1.psis excl B))
+                        res += cnew.substitutedMany(s)
+                    }
+            }
         }
     }
     res
