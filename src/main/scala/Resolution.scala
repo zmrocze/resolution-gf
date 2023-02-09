@@ -7,6 +7,7 @@ case class UqClause[X](psis : Set[SkolemLiteral[X]])  extends Pretty {
     override def prettyPrio(prio: Int): String = textInterleaved(" v ", this.psis.map(_.prettyPrio(prio)))
     def substitutedMany(mgu : Map[X, Term[X]]) : UqClause[X] = 
         UqClause( this.psis.map(_.substitutedMany(mgu)) )
+    def fmaped[Y](f : X => Y): UqClause[Y] = UqClause(this.psis.map(_.fmaped(f)))
 }
 
 case class UqClauseSet[X](clauses : Set[UqClause[X]]) extends Pretty {
@@ -19,9 +20,9 @@ case class UqClauseSet[X](clauses : Set[UqClause[X]]) extends Pretty {
 def toUq[X](c : ClauseSet[X]) = {
     UqClauseSet(c.clauses.map( x => UqClause(x.psis.toSet) ).toSet)
 }
-def greater[X](a : SkolemLiteral[X] , b : SkolemLiteral[X]) = 
+def greater[X](a : SkolemLiteral[X] , b : SkolemLiteral[X]) = {
     (a.vardepth() < b.vardepth()) 
-    || ((a.freeVars() subsetOf b.freeVars()) && (a.freeVars() != b.freeVars()))
+    || ((a.freeVars() subsetOf b.freeVars()) && (a.freeVars() != b.freeVars()))}
 
 def maximals[X](c : UqClause[X]) = {    
     def ismaximal(A : SkolemLiteral[X]) = 
@@ -29,16 +30,21 @@ def maximals[X](c : UqClause[X]) = {
     c.psis.filter(ismaximal)
 }
 
-def resolve[X](c1 : UqClause[X], c2 : UqClause[X])(implicit ord: Ordering[X]) : UqClauseSet[X] = UqClauseSet {
-    var res : Set[UqClause[X]] = Set.empty
+def resolve(c1 : UqClause[Int], c2 : UqClause[Int])(implicit ord: Ordering[Int]) : UqClauseSet[Int] = UqClauseSet {
+    var res : Set[UqClause[Int]] = Set.empty
     for (A <- maximals(c1)) {
         for (B <- maximals(c2)) {
             if (A.sign == ! B.sign) {
-                mgu[X](A.atom, B.atom) match
+                println("start")
+                mguResolvedClause(A, B, c1, c2) match
                     case None => unit
-                    case Some(s) => {
-                        val cnew = UqClause((c1.psis excl A) union (c2.psis excl B))
-                        res = res + cnew.substitutedMany(s)
+                    case Some(cnew) => {
+                        println("in resolve maximals: A=" ++ A.pretty() ++ " B= " ++ B.pretty())
+                        println("in resolve clauses: c1=" ++ c1.pretty() ++ " c2= " ++ c2.pretty())
+                        // val cnew = UqClause((c1.psis excl A) union (c2.psis excl B))
+                        println(cnew.pretty())
+                        res = res + cnew
+                        print("end")
                     }
             }
         }
@@ -62,7 +68,7 @@ def factor[X](c1 : UqClause[X])(implicit ord: Ordering[X]) : Set[UqClause[X]] = 
 }
 
 
-def resolutionAux[X](c0 : ClauseSet[X])(implicit ord: Ordering[X]) : Set[UqClause[X]] = {
+def resolutionAux(c0 : ClauseSet[Int])(implicit ord: Ordering[Int]) : Set[UqClause[Int]] = {
     var C = toUq(c0).clauses
     var continue = true
     var i = 0
@@ -89,14 +95,14 @@ def resolutionAux[X](c0 : ClauseSet[X])(implicit ord: Ordering[X]) : Set[UqClaus
     // C
 }
 
-def resolution[X](c0 : ClauseSet[X])(implicit ord: Ordering[X]) : Boolean = {
+def resolution(c0 : ClauseSet[Int])(implicit ord: Ordering[Int]) : Boolean = {
     val C = resolutionAux(c0)
     // println(UqClauseSet(C).pretty())
 
     ! (C contains UqClause(Set.empty))
 }
 
-def verboseResolution[X](c0 : ClauseSet[X])(implicit ord: Ordering[X]) : Boolean = {
+def verboseResolution(c0 : ClauseSet[Int]) : Boolean = {
     val C = resolutionAux(c0)
     println("Final clause set: " ++ UqClauseSet(C).pretty())
     println()

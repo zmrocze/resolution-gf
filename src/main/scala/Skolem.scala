@@ -20,6 +20,7 @@ case class SkolemLiteral[X](sign : Boolean, atom : AtomicFormula[X]) extends Sko
     
     def vardepth(): Int = this.atom.vardepth()
     def freeVars(): Set[X] = this.atom.freeVars()
+    def fmaped[Y](f : X => Y) = SkolemLiteral(this.sign, this.atom.fmaped(f))
 
     def substitutedMany(subs : Map[X, Term[X]]) = this match
         case SkolemLiteral(sign, atom) => SkolemLiteral(sign, atom.substitutedMany(subs))
@@ -100,5 +101,6 @@ def skolem[X]
             SkolemTopForall(variables, guard, mquantifier2, 
                 skolemRec(Set.from(variables) concat mquantifier2.map((x,y)=>x).toList.flatMap(Set.from), sub))
   
-
-  
+// def mapSkolem[X]
+//   (phi : List[StructedFormula[X]]
+//   : SkolemedFormula[X] = 

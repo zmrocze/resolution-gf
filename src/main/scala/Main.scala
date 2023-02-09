@@ -21,18 +21,18 @@ import scala.util.chaining._
     println()
     x
   }
-  phi
-    .pipe(trace[GFFormula[Char]])
-    .pipe(nnf[Char])
-    .pipe(trace)
-    .pipe(struct[Unit,Char])
-    .pipe(traceWith(prettySet))
-    .map(skolem[Char])
-    .pipe(traceWith(prettySet))
-    .map(clausifySkolemed[Char]).foldLeft(ClauseSet[Char](List()))(_ concat _)
-    .pipe(trace)
-  val cnf = clausify(phi)
-  println(cnf.pretty())
+  // phi
+  //   .pipe(trace[GFFormula[Char]])
+  //   .pipe(nnf[Char])
+  //   .pipe(trace)
+  //   .pipe(struct[Unit,Char])
+  //   .pipe(traceWith(prettySet))
+  //   .map(skolem[Char])
+  //   .pipe(traceWith(prettySet))
+  //   .map(clausifySkolemed[Char]).foldLeft(ClauseSet[Char](List()))(_ concat _)
+  //   .pipe(trace)
+  // val cnf = clausify(phi)
+  println(phi.pretty())
 
   // println(SAT[Int](phi2))
 

@@ -72,6 +72,10 @@ sealed abstract class Term[X] extends Pretty {
         val d = arglist.map(_.vardepth()).max
         if d <= -1 then -1 else 1 + d
 
+  def fmaped[Y](f : X => Y): Term[Y] = this match
+      case VarTerm(variable) => VarTerm(f(variable))
+      case FuncTerm(function, arglist) => FuncTerm(function, arglist.map(_.fmaped(f)))
+
   def substituted(variable : X, subst : Term[X]) : Term[X] = this match
     case VarTerm(var1) => if (var1 == variable) then subst else this
     case FuncTerm(function, arglist) => FuncTerm(function, arglist . map((x => x.substituted(variable, subst))))
@@ -102,7 +106,10 @@ case class FuncTerm[X](function : FunctionalSymbol, arglist : List[Term[X]]) ext
 case class AtomicFormula[X](relation : RelationalSymbol, arglist : List[Term[X]]) extends Pretty:
   override def prettyPrio(prio : Int) : String =
     this.relation + "(" + commaInterleaved(this.arglist.map(_.prettyPrio(prio))) + ")"
-  
+
+  def fmaped[Y](f : X => Y): AtomicFormula[Y] = 
+    AtomicFormula(this.relation, this.arglist.map(_.fmaped(f)))
+
   def freeVars() : Set[X] = Set.from( arglist.flatMap(x => x.freeVars()) )
   def vardepth() : Int = 
       if arglist.isEmpty then 
