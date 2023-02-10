@@ -64,6 +64,20 @@ class MySuite extends munit.FunSuite {
   test("Pairs formula"){ 
     assertEquals(verboseSAT(parity), true) 
   }
+  // \forall{x_1,x_2}(\Rrel(x_1, x_2) \to \neg \forall{x_3,x_4} (\Qrel(x_1,x_2,x_3,x_4) \to \Rrel(x_2,x_3) \lor \Rrel(x_3,x_4)))
+  val phipresentation = And(Forall(List(1,2), atom("R", List(1,2)), 
+    Not(Forall(List(3,4), atom("Q", List(1,2,3,4)), 
+      And(aatom("R", List(2,3)), aatom("R", List(3,4)))))), 
+    Exist(List(1,2), atom("R", List(1,2)), aatom("P", List(2))))
+  test("Presentation example"){ 
+    assertEquals(verboseSAT(phipresentation), true) 
+  }        
+  val phipresentation2 = And(Forall(List(1,2), atom("S", List(1,2)), 
+    And(aatom("P", List(1)), Not(aatom("P", List(2))))), 
+    Exist(List(1,2,3), atom("R", List(1,2,3)), And(aatom("S", List(1,2)), aatom("S", List(2,3))))) 
+  test("Presentation example unsatisfiable"){ 
+    assertEquals(verboseSAT(phipresentation2), false) 
+  }        
   // val phidebug : GFFormula[Int] = 
   //   ands(List(
   //     And(Forall(List(1), atom("P", List(1)), Not(Atom(atom("N", List(1))))), 

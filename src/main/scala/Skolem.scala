@@ -100,7 +100,6 @@ def mapSkolem[X](phis : Set[StructedFormula[X]]): Set[SkolemedFormula[X]] =
     def newFun() : RelationalSymbol = newFunctionalSymbols match
         case x #:: xs => {
             newFunctionalSymbols = xs
-            println("skolem: " ++ x.toString())
             x
         }
         case _ => throw new Error("List is infinite, impossible.")
